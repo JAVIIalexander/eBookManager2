@@ -1,0 +1,130 @@
+import json
+import os
+from abc import ABC, abstractmethod
+
+class GestorLibros(ABC):
+    @abstractmethod
+    def agregar_libro(self, nombre_usuario, titulo, autor, formato):
+        pass
+
+    @abstractmethod
+    def mostrar_libros(self, nombre_usuario):
+        pass
+
+class eBookManager(GestorLibros):
+    def __init__(self):
+        self.__datos = self.cargar_datos()
+
+    def cargar_datos(self):
+        if os.path.exists("datos.json"):
+            with open("datos.json", "r") as archivo:
+                return json.load(archivo)
+        return {}
+
+    def guardar_datos(self):
+        with open("datos.json", "w") as archivo:
+            json.dump(self.__datos, archivo, indent=4)
+
+    def agregar_usuario(self, nombre_usuario):
+        if nombre_usuario not in self.__datos:
+            self.__datos[nombre_usuario] = []
+            print(f"Usuario '{nombre_usuario}' creado.")
+        else:
+            print(f"El usuario '{nombre_usuario}' ya existe.")
+
+    def agregar_libro(self, nombre_usuario, titulo, autor, formato):
+        if formato not in ["PDF", "EPUB"]:
+            print("Formato no válido. Debe ser PDF o EPUB.")
+            return
+        if nombre_usuario in self.__datos:
+            libro = {"titulo": titulo, "autor": autor, "formato": formato}
+            self.__datos[nombre_usuario].append(libro)
+            print(f"Libro '{titulo}' agregado para el usuario '{nombre_usuario}'.")
+            self.guardar_datos()
+        else:
+            print("Usuario no encontrado.")
+
+    def mostrar_libros(self, nombre_usuario):
+        if nombre_usuario in self.__datos:
+            libros = self.__datos[nombre_usuario]
+            if libros:
+                print(f"Libros de {nombre_usuario}:")
+                for i, libro in enumerate(libros, 1):
+                    print(f"{i}. {libro['titulo']} - {libro['autor']} ({libro['formato']})")
+            else:
+                print("No hay libros para este usuario.")
+        else:
+            print("Usuario no encontrado.")
+
+    def buscar_libro(self, nombre_usuario, busqueda):
+        if nombre_usuario in self.__datos:
+            libros = self.__datos[nombre_usuario]
+            encontrados = [libro for libro in libros if busqueda.lower() in libro['titulo'].lower() or busqueda.lower() in libro['autor'].lower()]
+            if encontrados:
+                print("Libros encontrados:")
+                for libro in encontrados:
+                    print(f"{libro['titulo']} - {libro['autor']} ({libro['formato']})")
+            else:
+                print("No se encontraron libros con esa búsqueda.")
+        else:
+            print("Usuario no encontrado.")
+
+    def eliminar_libro(self, nombre_usuario, titulo):
+        if nombre_usuario in self.__datos:
+            libros = self.__datos[nombre_usuario]
+            for libro in libros:
+                if libro['titulo'].lower() == titulo.lower():
+                    libros.remove(libro)
+                    print(f"Libro '{titulo}' eliminado.")
+                    self.guardar_datos()
+                    return
+            print("Libro no encontrado.")
+        else:
+            print("Usuario no encontrado.")
+
+    def menu(self):
+        while True:
+            print("\n--- eBookManager ---")
+            print("1. Registrar usuario")
+            print("2. Agregar libro")
+            print("3. Mostrar libros")
+            print("4. Buscar libro")
+            print("5. Eliminar libro")
+            print("6. Salir")
+            opcion = input("Seleccione una opción: ")
+
+            if opcion == "1":
+                nombre_usuario = input("Nombre del usuario: ")
+                self.agregar_usuario(nombre_usuario)
+
+            elif opcion == "2":
+                nombre_usuario = input("Nombre del usuario: ")
+                titulo = input("Título del libro: ")
+                autor = input("Autor del libro: ")
+                formato = input("Formato (PDF/EPUB): ")
+                self.agregar_libro(nombre_usuario, titulo, autor, formato)
+
+            elif opcion == "3":
+                nombre_usuario = input("Nombre del usuario: ")
+                self.mostrar_libros(nombre_usuario)
+
+            elif opcion == "4":
+                nombre_usuario = input("Nombre del usuario: ")
+                busqueda = input("Buscar por título o autor: ")
+                self.buscar_libro(nombre_usuario, busqueda)
+
+            elif opcion == "5":
+                nombre_usuario = input("Nombre del usuario: ")
+                titulo = input("Título del libro a eliminar: ")
+                self.eliminar_libro(nombre_usuario, titulo)
+
+            elif opcion == "6":
+                print("Saliendo del programa...")
+                break
+
+            else:
+                print("Opción no válida, intente de nuevo.")
+
+if __name__ == "__main__":
+    manager = eBookManager()
+    manager.menu()
